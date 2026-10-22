@@ -47,27 +47,77 @@ CREATE TABLE dw.dim_time (
 );
 
 -- ── TODO 1: Dimensión cliente (SCD Tipo 2) ─────────────────
--- ¿Qué atributos del cliente sirven para analizar el negocio?
--- ¿Cuáles NO deberían estar en el data warehouse (piensa en datos personales)?
--- ¿Por qué la PK no puede ser customer_id si la dimensión es SCD2?
+-- Grano: una fila por version valida de un cliente
+-- NO incluye name ni email: son datos personales (PII), no deben entrar al data warehouse
+-- La PK es la surrogate key porque con SCD2 un mismo customer_id aparece en varias filas (versiones).
+
+CREATE TABLE dw.dim_customer (
+    customer_key        INT             GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    customer_id         VARCHAR(10)     NOT NULL,   -- llave natural del OLTP
+    city                VARCHAR(100),
+    segment             VARCHAR(50),                -- mass, premium, high_value
+    monthly_income_cop  NUMERIC(15,2),
+    valid_from          TIMESTAMP       NOT NULL,   -- inicio de vigencia de la version
+    valid_to            TIMESTAMP       NOT NULL,   -- 'infinity' mientras esta vigente
+    is_current          BOOLEAN         NOT NULL    -- TRUE = version activa
+);
+
+-- Busqueda SCD2: localizar la version vigente de un cliente
+CREATE INDEX idx_dim_customer_lookup
+    ON dw.dim_customer (customer_id, valid_from, valid_to);
 
 
 
 -- ── TODO 2: Dimensión comercio ─────────────────────────────
+-- SCD Tipo 1 (se sobrescribe): los atributos del comercio son estables y no cambian el analsis historico.
+
+CREATE TABLE dw.dim_merchant (
+    merchant_key        INT             GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    merchant_id         VARCHAR(10)     NOT NULL,   -- llave natural del OLTP
+    name                VARCHAR(200)    NOT NULL,
+    category            VARCHAR(100),               -- atributo clave para Q1
+    city                VARCHAR(100)
+);
 
 
 
 -- ── TODO 3: Dimensión método de pago ───────────────────────
+-- method_type es un atributo CONFORMADO que no existe en el OLTP:
+-- se deriva en la carga (credit_card -> card, nequi -> digital_wallet, etc.)
+
+CREATE TABLE dw.dim_payment_method (
+    payment_method_key  INT             GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    method_id           INT             NOT NULL,   -- llave natural del OLTP
+    method_name         VARCHAR(50)     NOT NULL,   -- credit_card, nequi, pse...
+    method_type         VARCHAR(30)     NOT NULL   -- card, digital_wallet, bank_transfer
+);
 
 
 
 -- ── TODO 4: Tabla de hechos ────────────────────────────────
--- Grano: una fila por transacción.
--- Cada foreign key debe referenciar la PK de su dimensión.
+-- Grano: una fila por transacción de PayTrack.
+
+CREATE TABLE dw.fact_transactions (
+    transaction_id      VARCHAR(20)     PRIMARY KEY,
+    -- 5 llaves foraneas a las dimensiones
+    date_key            INT             NOT NULL REFERENCES dw.dim_date (date_key),
+    time_key            INT             NOT NULL REFERENCES dw.dim_time (time_key),
+    customer_key        INT             NOT NULL REFERENCES dw.dim_customer (customer_key),
+    merchant_key        INT             NOT NULL REFERENCES dw.dim_merchant (merchant_key),
+    payment_method_key  INT             NOT NULL REFERENCES dw.dim_payment_method (payment_method_key),
+    -- medidas
+    amount_cop          NUMERIC(15,2)   NOT NULL,   -- aditiva
+    is_fraud            BOOLEAN         NOT NULL,   -- aditiva (suma = conteo)
+    is_approved         BOOLEAN         NOT NULL,   -- aditiva (suma = conteo)
+    fraud_risk_score    NUMERIC(5,4)                -- no aditiva: NULL si no hay evento
+);
 
 
 
 -- ── TODO 5: Índices para las consultas analíticas ──────────
--- Revisa los filtros y JOIN de olap_queries.sql. ¿Qué columnas de la
--- tabla de hechos conviene indexar? Mide el efecto con EXPLAIN ANALYZE.
+-- Basados en los filtros y JOIN de olap_queries-sql:
 
+CREATE INDEX idx_fact_date          ON dw.fact_transactions (date_key);                     -- Q1 y Q3: filtro por fecha  
+CREATE INDEX idx_fact_merchant      ON dw.fact_transactions (merchant_key);                 -- Q1: JOIN con categoria
+CREATE INDEX idx_fact_customer      ON dw.fact_transactions (customer_key);                 -- Q2: JOIN con segmento
+CREATE INDEX idx_fact_fraud         ON dw.fact_transactions (merchant_key) WHERE is_fraud;  -- parcial: analisis de fraude
