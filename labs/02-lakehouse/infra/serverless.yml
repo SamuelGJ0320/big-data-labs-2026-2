@@ -1,6 +1,7 @@
 # ================================================================
 # Lab 2 · Infraestructura del lakehouse de PayTrack
 #   S3 (raw + lakehouse Delta) · 4 jobs de Glue 5.0 · catálogo · Athena
+#   Streaming: Kinesis Data Streams · 1 job de Glue Streaming (Spark Structured Streaming)
 #
 # Despliegue:  serverless deploy --stage dev
 # Limpieza:    ver README (vaciar el bucket y luego serverless remove)
@@ -18,6 +19,18 @@ custom:
   glueJobArgs:
     "--BASE": s3://${self:custom.bucketName}
     "--INGEST_DATE": "none"
+    "--datalake-formats": delta
+    "--conf": "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
+    "--extra-py-files": s3://${self:custom.bucketName}/scripts/common.py
+    "--enable-continuous-cloudwatch-log": "true"
+  streamName: paytrack-transactions
+  # El job de streaming recibe los mismos argumentos más los del stream
+  streamJobArgs:
+    "--BASE": s3://${self:custom.bucketName}
+    "--SOURCE": kinesis
+    "--STREAM": arn:aws:kinesis:${aws:region}:${aws:accountId}:stream/${self:custom.streamName}
+    "--BOOTSTRAP": "none"
+    "--RUN_SECONDS": "300"
     "--datalake-formats": delta
     "--conf": "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog"
     "--extra-py-files": s3://${self:custom.bucketName}/scripts/common.py
@@ -86,6 +99,14 @@ resources:
                   Resource:
                     - arn:aws:s3:::${self:custom.bucketName}
                     - arn:aws:s3:::${self:custom.bucketName}/*
+                - Effect: Allow
+                  Action:
+                    - kinesis:DescribeStream
+                    - kinesis:DescribeStreamSummary
+                    - kinesis:GetRecords
+                    - kinesis:GetShardIterator
+                    - kinesis:ListShards
+                  Resource: !GetAtt TransactionStream.Arn
 
     # ── Glue: un job por capa ────────────────────────────────
     BronzeJob:
@@ -148,6 +169,32 @@ resources:
           ScriptLocation: s3://${self:custom.bucketName}/scripts/audit.py
         DefaultArguments: ${self:custom.glueJobArgs}
 
+    # ── Streaming ────────────────────────────────────────────
+    # Kinesis cobra por shard-hora aunque no le llegue nada: elimínalo al terminar.
+    TransactionStream:
+      Type: AWS::Kinesis::Stream
+      Properties:
+        Name: ${self:custom.streamName}
+        ShardCount: 2
+        RetentionPeriodHours: 24
+        StreamModeDetails:
+          StreamMode: PROVISIONED
+
+    StreamJob:
+      Type: AWS::Glue::Job
+      Properties:
+        Name: paytrack-stream
+        Role: !GetAtt GlueRole.Arn
+        GlueVersion: "5.0"
+        WorkerType: G.1X
+        NumberOfWorkers: 2
+        Timeout: 20  # minutos: tope de seguridad por si el job no se detiene solo
+        Command:
+          Name: gluestreaming
+          PythonVersion: "3"
+          ScriptLocation: s3://${self:custom.bucketName}/scripts/stream.py
+        DefaultArguments: ${self:custom.streamJobArgs}
+
     # ── Athena ───────────────────────────────────────────────
     AthenaWorkGroup:
       Type: AWS::Athena::WorkGroup
@@ -165,3 +212,5 @@ resources:
   Outputs:
     LakehouseBucket:
       Value: !Ref LakehouseBucket
+    TransactionStream:
+      Value: !Ref TransactionStream

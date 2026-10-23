@@ -55,6 +55,50 @@ def read_table(spark: SparkSession, path: str) -> DataFrame:
     return spark.read.format("delta").load(path)
 
 
+def read_events(spark: SparkSession, source: str, stream: str, bootstrap: str, schema: str) -> DataFrame:
+    """Lee el stream de eventos como un DataFrame de streaming, parseado con `schema` (DDL).
+
+    - kafka   (local): `stream` es el topic y `bootstrap` el broker
+    - kinesis (Glue):  `stream` es el ARN del stream; lo lee el conector de Glue
+
+    Devuelve las columnas del esquema más arrival_ts: cuándo llegó el evento al broker.
+    Empieza desde el evento más antiguo que retiene el broker; después, el checkpoint
+    de cada consulta recuerda hasta dónde se leyó.
+    """
+    from pyspark.sql import functions as F
+
+    if source == "kafka":
+        raw = (
+            spark.readStream.format("kafka")
+            .option("kafka.bootstrap.servers", bootstrap)
+            .option("subscribe", stream)
+            .option("startingOffsets", "earliest")
+            .option("maxOffsetsPerTrigger", 2000)  # micro-lotes pequeños, como llegarían en vivo
+            .load()
+        )
+        return raw.select(
+            F.from_json(F.col("value").cast("string"), schema).alias("e"), F.col("timestamp").alias("arrival_ts")
+        ).select("e.*", "arrival_ts")
+
+    from awsglue.context import GlueContext
+
+    df = GlueContext(spark.sparkContext).create_data_frame.from_options(
+        connection_type="kinesis",
+        connection_options={
+            "streamARN": stream,
+            "startingPosition": "TRIM_HORIZON",
+            "classification": "json",
+            "inferSchema": "false",
+            "schema": schema,
+            "addRecordTimestamp": "true",
+            "maxFetchRecordsPerShard": "2000",
+        },
+    )
+    src = "__src_timestamp"
+    arrival = F.timestamp_millis(src) if dict(df.dtypes)[src] in ("bigint", "int") else F.col(src).cast("timestamp")
+    return df.withColumn("arrival_ts", arrival).drop(src)
+
+
 def check(condition: bool, message: str) -> None:
     """Autoevaluación: si falla, el job termina con error y muestra el motivo."""
     if not condition:

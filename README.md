@@ -4,8 +4,8 @@ Laboratorios prácticos para el curso **Almacenamiento y Procesamiento de Grande
 
 **Caso de uso:** PayTrack Colombia — plataforma de pagos digitales con 500K transacciones diarias, análisis de fraude en tiempo real y conciliación batch.
 
-> El Lab 2 corre en AWS (S3, Glue, Athena) con Delta Lake, desplegado con Serverless Framework v3,
-> y se puede desarrollar completo en local con Docker.
+> El Lab 2 corre en AWS (S3, Glue, Kinesis, Athena) con Delta Lake, desplegado con Serverless Framework v3,
+> y se puede desarrollar completo en local con Docker (Spark + Kafka).
 
 ---
 
@@ -14,7 +14,7 @@ Laboratorios prácticos para el curso **Almacenamiento y Procesamiento de Grande
 | Lab | Tema | Infraestructura | Peso | Entrega |
 |-----|------|-----------------|------|---------|
 | [Lab 1](labs/01-modelado/) | Modelado OLTP → OLAP: de transacciones a esquema estrella (SCD2) | Docker + PostgreSQL | 15% | Vie 23 oct |
-| [Lab 2](labs/02-lakehouse/) | Lakehouse end-to-end: S3 → Medallion con Delta Lake en Glue → Athena | Docker (local) + AWS | 30% | Vie 6 nov |
+| [Lab 2](labs/02-lakehouse/) | Lakehouse end-to-end: batch (S3 → Medallion con Delta Lake en Glue → Athena) y streaming (Kafka / Kinesis → Spark Structured Streaming → Delta) | Docker (local) + AWS | 30% | Vie 6 nov |
 
 ## Cómo funcionan los labs
 
@@ -40,11 +40,14 @@ Cada lab incluye **autoevaluación**: tests, scripts de validación o validacion
 git clone https://github.com/asacrea/big-data-labs-2026-2.git
 cd big-data-labs-2026-2
 
-# 2. Instalar dependencias de Python
-uv sync
+# 2. Instalar dependencias de Python (incluye pytest)
+uv sync --extra dev
 
 # 3. Levantar PostgreSQL y pgAdmin (Lab 1)
 docker compose -f .docker/docker-compose.yml up -d postgres pgadmin
+
+# Lab 2 (streaming): levantar Kafka
+docker compose -f .docker/docker-compose.yml up -d kafka
 
 # 4. Lab 2: variables de entorno de AWS
 cp .envs/aws.env.example .envs/aws.env
@@ -77,7 +80,7 @@ Los labs van construyendo la arquitectura completa de esta plataforma sesión a 
 ├── labs/
 │   ├── shared/       # Generador de datos sintéticos de PayTrack
 │   ├── 01-modelado/  # Lab 1: OLTP → OLAP (PostgreSQL)
-│   └── 02-lakehouse/ # Lab 2: Lakehouse en AWS (S3 + Delta + Glue + Athena)
+│   └── 02-lakehouse/ # Lab 2: Lakehouse batch y streaming (S3 + Delta + Glue + Kafka/Kinesis + Athena)
 └── pyproject.toml    # Dependencias de Python (uv)
 ```
 
