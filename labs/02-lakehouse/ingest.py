@@ -16,6 +16,7 @@ Completa los TODO y valida tu lógica con:
 import argparse
 import json
 from pathlib import Path
+from datetime import date
 
 DATASETS = ["transactions", "fraud_events", "customers", "merchants"]
 
@@ -24,10 +25,16 @@ DATASETS = ["transactions", "fraud_events", "customers", "merchants"]
 # Devuelve el prefijo donde queda un dataset para un lote, con partición estilo
 # Hive para que Spark, Glue y Athena la reconozcan:
 #   raw/<dataset>/ingest_date=<YYYY-MM-DD>/
-# Ejemplo: raw_prefix("transactions", "2026-09-30") → "raw/transactions/ingest_date=2026-09-30/"
+# Ejemplo: raw_prefix("transactions", "2026-09-30") -> "raw/transactions/ingest_date=2026-09-30/"
 # Si la fecha no es una fecha válida en formato YYYY-MM-DD, lanza ValueError.
 def raw_prefix(dataset: str, ingest_date: str) -> str:
-    raise NotImplementedError("TODO 1: raw_prefix")
+    try:
+        # validación estricta: solo YYYY-MM-DD con fecha real
+        if date.fromisoformat(ingest_date).isoformat() != ingest_date:
+            raise ValueError
+    except ValueError:
+        raise ValueError(f"ingest_date inválida: {ingest_date!r} (se espera YYYY-MM-DD)")
+    return f"raw/{dataset}/ingest_date={ingest_date}/"
 
 
 # ── TODO 2: formato JSON Lines ───────────────────────────────────────────────
@@ -35,7 +42,7 @@ def raw_prefix(dataset: str, ingest_date: str) -> str:
 # Athena esperan JSON Lines: un objeto JSON por línea, sin corchetes ni comas
 # entre registros. Convierte la lista a ese formato, conservando las tildes.
 def to_json_lines(records: list[dict]) -> str:
-    raise NotImplementedError("TODO 2: to_json_lines")
+    return "\n".join(json.dumps(r, ensure_ascii=False) for r in records)
 
 
 # ── Dado ─────────────────────────────────────────────────────────────────────
@@ -57,7 +64,7 @@ def ingest(batch_dir: Path, ingest_date: str, base: str) -> None:
         records = json.loads((batch_dir / f"{dataset}.json").read_text())
         key = f"{raw_prefix(dataset, ingest_date)}part-0000.json"
         write(base.rstrip("/"), key, to_json_lines(records))
-        print(f"✓ {dataset}: {len(records)} registros → {base.rstrip('/')}/{key}")
+        print(f"OK {dataset}: {len(records)} registros -> {base.rstrip('/')}/{key}")
 
 
 if __name__ == "__main__":

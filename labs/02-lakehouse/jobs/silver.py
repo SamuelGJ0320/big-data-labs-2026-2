@@ -41,7 +41,10 @@ def ensure_table(df: DataFrame, path: str, partition_by: list[str]) -> None:
 # de ventana (Window + row_number); dropDuplicates no te deja elegir cuál fila
 # se conserva.
 def deduplicate(df: DataFrame, key: str) -> DataFrame:
-    raise NotImplementedError("TODO 1: deduplicate")
+    w = Window.partitionBy(key).orderBy(F.col("ingested_at").desc())
+    return (df.withColumn("_rn", F.row_number().over(w))
+                .filter(F.col("_rn") == 1)
+                .drop("_rn"))
 
 
 # ── TODO 2: tipar ────────────────────────────────────────────────────────────
@@ -51,7 +54,12 @@ def deduplicate(df: DataFrame, key: str) -> DataFrame:
 #   - is_fraud como boolean
 #   - columnas de partición year ("YYYY") y month ("MM") derivadas de event_ts
 def standardize(df: DataFrame) -> DataFrame:
-    raise NotImplementedError("TODO 2: standardize")
+    return (df.withColumn("amount_cop", F.col("amount_cop").cast("decimal(15,2)"))
+                .withColumn("event_ts", F.to_timestamp("timestamp"))
+                .drop("timestamp")
+                .withColumn("is_fraud", F.col("is_fraud").cast("boolean"))
+                .withColumn("year", F.date_format("event_ts", "yyyy"))
+                .withColumn("month", F.date_format("event_ts", "MM")))
 
 
 # ── TODO 3: reglas de calidad ────────────────────────────────────────────────
@@ -60,7 +68,21 @@ def standardize(df: DataFrame) -> DataFrame:
 #   amount_cop nulo, <= 0 o >= AMOUNT_MAX           → 'invalid_amount'
 #   status que no está en VALID_STATUS              → 'invalid_status'
 def add_quality_flags(df: DataFrame) -> DataFrame:
-    raise NotImplementedError("TODO 3: add_quality_flags")
+    return df.withColumn(
+        "dq_reason",
+        F.when(F.col("customer_id").isNull(), F.lit("missing_customer"))
+        .when(
+            F.col("amount_cop").isNull()
+            | (F.col("amount_cop") <= 0)
+            | (F.col("amount_cop") >= AMOUNT_MAX),
+            F.lit("invalid_amount"),
+        )
+        .when(
+            F.col("status").isNull() | ~F.col("status").isin(VALID_STATUS),
+            F.lit("invalid_status"),
+        )
+        .otherwise(F.lit(None)),
+    )
 
 
 # ── TODO 4: upsert con MERGE ─────────────────────────────────────────────────
@@ -72,7 +94,14 @@ def add_quality_flags(df: DataFrame) -> DataFrame:
 #   - si no existe: insértala completa
 # Re-ejecutar el job con el mismo lote no debe cambiar la tabla.
 def upsert_transactions(valid: DataFrame, path: str) -> None:
-    raise NotImplementedError("TODO 4: upsert_transactions")
+    delta = DeltaTable.forPath(spark, path)
+    (delta.alias("t")
+        .merge(valid.alias("s"), "t.transaction_id = s.transaction_id")
+        .whenMatchedUpdateAll(
+            condition="t.status <> s.status OR (t.status IS NULL AND s.status IS NOT NULL) OR (t.status IS NOT NULL AND s.status IS NULL)",
+        )
+        .whenNotMatchedInsertAll()
+        .execute())
 
 
 # ── TODO 5: proteger datos personales ────────────────────────────────────────
@@ -81,7 +110,7 @@ def upsert_transactions(valid: DataFrame, path: str) -> None:
 #   "carlos.perez@gmail.com" → "car***@gmail.com"
 # Pista: F.regexp_replace
 def masked_email(col: str = "email"):
-    raise NotImplementedError("TODO 5: masked_email")
+    return F.regexp_replace(F.col(col), r"^([^@]{1,3})([^@]*)@(.+)$", r"\1***@\3")
 
 
 # ── Ejecución (dada) ─────────────────────────────────────────────────────────
