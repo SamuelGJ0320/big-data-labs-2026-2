@@ -1,0 +1,5 @@
+=== TOPIC OFFSETS (antes) ===
+paytrack.transactions:0:8053
+paytrack.transactions:1:6346
+paytrack.transactions:2:6567
+total topic: 20966

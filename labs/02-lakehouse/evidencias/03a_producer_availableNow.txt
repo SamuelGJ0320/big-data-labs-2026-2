@@ -1,0 +1,3 @@
+%4|1793890106.108|GETPID|rdkafka#producer-1| [thrd:main]: Failed to acquire idempotence PID from broker localhost:9092/1: Broker: Coordinator load in progress: retrying
+
+✓ 12316 eventos enviados en 0s (chargeback: 256, payment: 12060) · 0 perdidos

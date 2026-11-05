@@ -70,6 +70,36 @@ TBLPROPERTIES ('table_type' = 'DELTA');
 -- esa ventana? Una alerta es un acierto si alguno de los pagos del cliente con
 -- event_time dentro de [window_start, window_end) tiene is_fraud = true
 -- (bronze_transaction_events). Reporta alertas, aciertos y % de precisión.
+--
+-- Se marca cada alerta como acierto UNA sola vez (MAX sobre el LEFT JOIN, por
+-- la llave de la alerta: window_start, window_end, customer_id), para no
+-- multiplicar la alerta por cada pago que cae en la ventana. El LEFT JOIN y el
+-- NULLIF manejan el caso sin alertas / sin pagos coincidentes (precisión NULL si
+-- no hay alertas, en vez de dividir por cero).
+WITH alert_hits AS (
+    SELECT
+        a.window_start,
+        a.window_end,
+        a.customer_id,
+        MAX(CASE
+                WHEN b.is_fraud = true
+                 AND b.event_type = 'payment'
+                 AND b.event_time >= a.window_start
+                 AND b.event_time <  a.window_end
+                THEN 1 ELSE 0
+            END) AS is_hit
+    FROM paytrack_lakehouse.gold_fraud_alerts a
+    LEFT JOIN paytrack_lakehouse.bronze_transaction_events b
+           ON b.customer_id = a.customer_id
+          AND b.event_time >= a.window_start
+          AND b.event_time <  a.window_end
+    GROUP BY a.window_start, a.window_end, a.customer_id
+)
+SELECT
+    COUNT(*)                                                   AS total_alertas,
+    SUM(is_hit)                                                AS aciertos,
+    ROUND(100.0 * SUM(is_hit) / NULLIF(COUNT(*), 0), 2)        AS precision_pct
+FROM alert_hits;
 
 
 -- ── TODO 6 (streaming) ──────────────────────────────────────
@@ -78,4 +108,37 @@ TBLPROPERTIES ('table_type' = 'DELTA');
 -- ventanas) con el número de transacciones del stream en silver_transactions
 -- (las que tienen transaction_id con prefijo 'TXNS'). Muestra la diferencia.
 -- ¿De dónde sale? (pista: watermark y ventanas que aún no se cierran)
+--
+-- Grano: una fila por (día, comercio). La capa rápida agrega por el día de
+-- window_start (métricas por minuto ya cerradas por el watermark); la capa batch
+-- cuenta transacciones del stream por el día de event_ts. FULL OUTER JOIN para no
+-- perder comercios/días que aparezcan en una capa pero no en la otra.
+WITH fast_layer AS (
+    SELECT
+        date(window_start)      AS dia,
+        merchant_id,
+        SUM(num_payments)       AS pagos_ventanas
+    FROM paytrack_lakehouse.gold_merchant_minute_metrics
+    GROUP BY date(window_start), merchant_id
+),
+batch_layer AS (
+    SELECT
+        date(event_ts)          AS dia,
+        merchant_id,
+        COUNT(*)                AS txns_stream_silver
+    FROM paytrack_lakehouse.silver_transactions
+    WHERE transaction_id LIKE 'TXNS%'
+    GROUP BY date(event_ts), merchant_id
+)
+SELECT
+    COALESCE(f.dia, b.dia)                   AS dia,
+    COALESCE(f.merchant_id, b.merchant_id)   AS merchant_id,
+    COALESCE(f.pagos_ventanas, 0)            AS pagos_capa_rapida,
+    COALESCE(b.txns_stream_silver, 0)        AS txns_capa_batch,
+    COALESCE(b.txns_stream_silver, 0) - COALESCE(f.pagos_ventanas, 0) AS diferencia
+FROM fast_layer f
+FULL OUTER JOIN batch_layer b
+  ON f.dia = b.dia
+ AND f.merchant_id = b.merchant_id
+ORDER BY dia, merchant_id;
 

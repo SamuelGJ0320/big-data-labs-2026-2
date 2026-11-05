@@ -58,15 +58,29 @@ resources:
               Status: Enabled
               Prefix: athena-results/
               ExpirationInDays: 7
-            # TODO: define la política de ciclo de vida de la zona raw/.
-            #   ¿Cuánto tiempo se re-procesa un lote? ¿Cuándo pasarlo a una clase más
-            #   barata (STANDARD_IA, GLACIER_IR)? ¿Se debe borrar alguna vez? (auditoría)
-            #   Usa Transitions (TransitionInDays + StorageClass) y/o ExpirationInDays.
+            # Ciclo de vida SOLO de la zona raw/ (los lotes tal como llegaron).
+            # Justificación: raw es la fuente de verdad para auditoría y reprocesamiento,
+            # así que NO expira (sin ExpirationInDays). Pero un lote se re-procesa en
+            # días, no en meses: pasado ese tiempo el acceso es poco frecuente, así que
+            # se abarata el almacenamiento sin perder el dato. Transiciones:
+            #   - 30 días  -> STANDARD_IA  (acceso infrecuente, aún recuperable al instante)
+            #   - 90 días  -> GLACIER_IR   (archivado con recuperación inmediata; más barato)
+            # Se aplica EXCLUSIVAMENTE al prefijo raw/: lakehouse/, checkpoints/ y
+            # athena-results/ no se ven afectados.
             #
-            # Pregunta para el informe: ¿por qué NO debes poner una regla de expiración
-            # sobre lakehouse/ (las tablas Delta)? ¿Qué usarías en su lugar?
-            # Referencia:
-            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-rule.html
+            # Nota (informe): sobre lakehouse/ (tablas Delta) NO se pone expiración
+            # porque Delta reescribe/compacta archivos y el _delta_log referencia
+            # versiones antiguas; expirar objetos por edad rompería el time travel y
+            # podría dejar la tabla inconsistente. En su lugar se usa la gestión propia
+            # de Delta (OPTIMIZE y VACUUM con un periodo de retención controlado).
+            - Id: raw-tiering
+              Status: Enabled
+              Prefix: raw/
+              Transitions:
+                - TransitionInDays: 30
+                  StorageClass: STANDARD_IA
+                - TransitionInDays: 90
+                  StorageClass: GLACIER_IR
 
     # ── Glue: catálogo y permisos ────────────────────────────
     GlueDatabase:

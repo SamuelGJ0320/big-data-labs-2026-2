@@ -1,0 +1,25 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.1, pytest-9.1.1, pluggy-1.7.0 -- /Users/alejo/Desktop/enfasis/grandes_datos/lab1/big-data-labs-2026-2/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/alejo/Desktop/enfasis/grandes_datos/lab1/big-data-labs-2026-2
+configfile: pyproject.toml
+plugins: cov-7.1.0, Faker-40.43.0, platformdirs-4.13.3
+collecting ... collected 15 items
+
+labs/02-lakehouse/tests/test_ingest.py::test_raw_prefix_formato_hive PASSED [  6%]
+labs/02-lakehouse/tests/test_ingest.py::test_raw_prefix_rechaza_fechas_invalidas[30-09-2026] PASSED [ 13%]
+labs/02-lakehouse/tests/test_ingest.py::test_raw_prefix_rechaza_fechas_invalidas[2026-13-01] PASSED [ 20%]
+labs/02-lakehouse/tests/test_ingest.py::test_raw_prefix_rechaza_fechas_invalidas[2026/09/30] PASSED [ 26%]
+labs/02-lakehouse/tests/test_ingest.py::test_raw_prefix_rechaza_fechas_invalidas[ayer] PASSED [ 33%]
+labs/02-lakehouse/tests/test_ingest.py::test_json_lines_un_objeto_por_linea PASSED [ 40%]
+labs/02-lakehouse/tests/test_ingest.py::test_json_lines_conserva_tildes PASSED [ 46%]
+labs/02-lakehouse/tests/test_producer.py::test_partition_key_mismo_cliente_misma_particion PASSED [ 53%]
+labs/02-lakehouse/tests/test_producer.py::test_partition_key_contracargo_con_su_pago PASSED [ 60%]
+labs/02-lakehouse/tests/test_producer.py::test_partition_key_reparte_la_carga PASSED [ 66%]
+labs/02-lakehouse/tests/test_producer.py::test_kafka_config PASSED       [ 73%]
+labs/02-lakehouse/tests/test_producer.py::test_reintenta_solo_los_fallidos PASSED [ 80%]
+labs/02-lakehouse/tests/test_producer.py::test_sin_fallas_un_solo_intento PASSED [ 86%]
+labs/02-lakehouse/tests/test_producer.py::test_respeta_max_attempts PASSED [ 93%]
+labs/02-lakehouse/tests/test_producer.py::test_backoff_exponencial PASSED [100%]
+
+============================== 15 passed in 0.03s ==============================

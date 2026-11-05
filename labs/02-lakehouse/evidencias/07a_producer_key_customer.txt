@@ -1,0 +1,2 @@
+
+✓ 1207 eventos enviados en 0s (chargeback: 28, payment: 1179) · 0 perdidos

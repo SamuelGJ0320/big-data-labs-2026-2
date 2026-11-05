@@ -63,7 +63,22 @@ def checkpoint(query: str) -> str:
 #   - "timestamp" es palabra reservada: escríbela entre comillas invertidas (`timestamp`)
 # Si un campo falta o tiene un tipo que no corresponde, llega como NULL.
 def event_schema() -> str:
-    raise NotImplementedError("TODO 1: event_schema")
+    return (
+        "event_id STRING, "
+        "event_type STRING, "
+        "event_time STRING, "
+        "transaction_id STRING, "
+        "customer_id STRING, "
+        "merchant_id STRING, "
+        "merchant_name STRING, "
+        "merchant_category STRING, "
+        "amount_cop DOUBLE, "
+        "payment_method STRING, "
+        "status STRING, "
+        "is_fraud BOOLEAN, "
+        "`timestamp` STRING, "
+        "city STRING"
+    )
 
 
 # ── TODO 2: deduplicar con watermark ─────────────────────────────────────────
@@ -76,7 +91,7 @@ def event_schema() -> str:
 #     watermark (event_time) hace parte de la llave. Un reenvío trae el mismo
 #     event_id Y el mismo event_time.
 def deduplicate_events(events: DataFrame) -> DataFrame:
-    raise NotImplementedError("TODO 2: deduplicate_events")
+    return events.withWatermark("event_time", WATERMARK).dropDuplicates(["event_id", "event_time"])
 
 
 # ── TODO 3: un evento por transacción ────────────────────────────────────────
@@ -85,7 +100,10 @@ def deduplicate_events(events: DataFrame) -> DataFrame:
 # por llave. Deja una sola fila por transaction_id: la de event_time más
 # reciente. Recibe un DataFrame estático (un micro-lote), no un stream.
 def latest_per_transaction(batch: DataFrame) -> DataFrame:
-    raise NotImplementedError("TODO 3: latest_per_transaction")
+    w = Window.partitionBy("transaction_id").orderBy(F.col("event_time").desc())
+    return (batch.withColumn("_rn", F.row_number().over(w))
+            .filter(F.col("_rn") == 1)
+            .drop("_rn"))
 
 
 # ── TODO 4: upsert de un micro-lote en silver ────────────────────────────────
@@ -99,7 +117,19 @@ def latest_per_transaction(batch: DataFrame) -> DataFrame:
 #   - si no existe: insértala completa
 # Si Spark re-ejecuta un micro-lote tras una falla, el resultado debe ser el mismo.
 def merge_into_silver(rows: DataFrame) -> None:
-    raise NotImplementedError("TODO 4: merge_into_silver")
+    delta = DeltaTable.forPath(spark, SILVER)
+    (delta.alias("t")
+        .merge(rows.alias("s"), "t.transaction_id = s.transaction_id")
+        .whenMatchedUpdate(
+            condition="t.status <> s.status AND t.status <> 'chargeback'",
+            set={
+                "status": "s.status",
+                "is_fraud": "s.is_fraud",
+                "silver_updated_at": "s.silver_updated_at",
+            },
+        )
+        .whenNotMatchedInsertAll()
+        .execute())
 
 
 # ── TODO 5: métricas por minuto y comercio ───────────────────────────────────
@@ -113,7 +143,27 @@ def merge_into_silver(rows: DataFrame) -> None:
 # Pista: F.window. La tabla se escribe en modo append: una ventana se emite una
 # sola vez, cuando el watermark la cierra.
 def merchant_metrics(clean: DataFrame) -> DataFrame:
-    raise NotImplementedError("TODO 5: merchant_metrics")
+    return (
+        clean.filter(F.col("event_type") == "payment")
+        .groupBy(F.window("event_time", METRICS_WINDOW), "merchant_id", "merchant_category")
+        .agg(
+            F.count("*").alias("num_payments"),
+            F.sum(F.when(F.col("status") == "approved", F.col("amount_cop")).otherwise(F.lit(0))).alias("approved_cop"),
+            F.round(
+                F.sum(F.when(F.col("status") == "approved", F.lit(1)).otherwise(F.lit(0))) * 100.0 / F.count("*"),
+                2,
+            ).alias("approval_rate_pct"),
+        )
+        .select(
+            F.col("window.start").alias("window_start"),
+            F.col("window.end").alias("window_end"),
+            "merchant_id",
+            "merchant_category",
+            "num_payments",
+            "approved_cop",
+            "approval_rate_pct",
+        )
+    )
 
 
 # ── TODO 6: alertas de ráfagas ───────────────────────────────────────────────
@@ -122,7 +172,22 @@ def merchant_metrics(clean: DataFrame) -> DataFrame:
 # Una fila por cliente y ventana con alerta:
 #   window_start, window_end, customer_id, num_payments, total_cop
 def fraud_alerts(clean: DataFrame) -> DataFrame:
-    raise NotImplementedError("TODO 6: fraud_alerts")
+    return (
+        clean.filter(F.col("event_type") == "payment")
+        .groupBy(F.window("event_time", ALERT_WINDOW, ALERT_SLIDE), "customer_id")
+        .agg(
+            F.count("*").alias("num_payments"),
+            F.sum("amount_cop").alias("total_cop"),
+        )
+        .filter(F.col("num_payments") >= ALERT_MIN_PAYMENTS)
+        .select(
+            F.col("window.start").alias("window_start"),
+            F.col("window.end").alias("window_end"),
+            "customer_id",
+            "num_payments",
+            "total_cop",
+        )
+    )
 
 
 # ── Dado: transformaciones fijas ─────────────────────────────────────────────

@@ -1,0 +1,41 @@
+
+━━━ stream ━━━
+org.apache.spark#spark-sql-kafka-0-10_2.12 added as a dependency
+	com.google.code.findbugs#jsr305;3.0.0 from central in [default]
+	commons-logging#commons-logging;1.1.3 from central in [default]
+	org.apache.commons#commons-pool2;2.11.1 from central in [default]
+	org.apache.hadoop#hadoop-client-api;3.3.4 from central in [default]
+	org.apache.hadoop#hadoop-client-runtime;3.3.4 from central in [default]
+	org.apache.kafka#kafka-clients;3.4.1 from central in [default]
+	org.apache.spark#spark-sql-kafka-0-10_2.12;3.5.3 from central in [default]
+	org.apache.spark#spark-token-provider-kafka-0-10_2.12;3.5.3 from central in [default]
+	org.lz4#lz4-java;1.8.0 from central in [default]
+	org.slf4j#slf4j-api;2.0.7 from central in [default]
+	org.xerial.snappy#snappy-java;1.1.10.5 from central in [default]
+✓ silver.transactions existe (corre antes el batch del lote 1)
+Modo en vivo: micro-lotes cada 10 s durante 240 s
+  bronze   micro-lotes:  18 · filas leídas:    659 · descartadas por watermark: 0
+  silver   micro-lotes:  18 · filas leídas:    440 · descartadas por watermark: 0
+  metrics  micro-lotes:  18 · filas leídas:    440 · descartadas por watermark: 4
+  alerts   micro-lotes:  18 · filas leídas:    440 · descartadas por watermark: 4
+  silver   micro-lotes:   1 · filas leídas:    219 · descartadas por watermark: 0
+  metrics  micro-lotes:   2 · filas leídas:    219 · descartadas por watermark: 1
+  alerts   micro-lotes:   2 · filas leídas:    219 · descartadas por watermark: 1
+✓ bronze.transaction_events: 12975 eventos
+✓ bronze: el esquema parsea todos los campos (sin NULL inesperados)
+✓ deduplicate_events: deja un evento por event_id
+✓ latest_per_transaction: una fila por transaction_id
+✓ silver: sin transaction_id duplicados
+✓ silver: llegaron todas las transacciones del stream (también las tardías)
+✓ silver: cada transacción quedó con el status de su último evento
+✓ silver: ningún contracargo fue revertido por un reenvío
+✓ metrics: 126 ventanas emitidas
+✓ metrics: una fila por ventana y comercio
+✓ metrics: ventanas de 1 minuto
+✓ metrics: no cuenta pagos repetidos
+✓ metrics: tasas y montos en rango
+✓ alerts: una fila por ventana y cliente
+✓ alerts: todas tienen 6 o más pagos
+✓ alerts: ventanas de 30 segundos
+
+Stream listo: 40589 transacciones en silver, 126 ventanas de métricas, 174 alertas

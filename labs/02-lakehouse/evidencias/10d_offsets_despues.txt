@@ -1,0 +1,8 @@
+=== TOPIC OFFSETS (despues) ===
+paytrack.transactions:0:8053
+paytrack.transactions:1:6346
+paytrack.transactions:2:6567
+total topic: 20966
+=== OFFSETS PROCESADOS POR BRONZE (ultimo commit del checkpoint) ===
+archivo: 21
+{"paytrack.transactions":{"2":6567,"1":6346,"0":8053}}

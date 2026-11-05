@@ -1,0 +1,109 @@
+━━━ ingest ━━━
+OK transactions: 30600 registros -> lakehouse-local/raw/transactions/ingest_date=2026-09-29/part-0000.json
+OK fraud_events: 129 registros -> lakehouse-local/raw/fraud_events/ingest_date=2026-09-29/part-0000.json
+OK customers: 500 registros -> lakehouse-local/raw/customers/ingest_date=2026-09-29/part-0000.json
+OK merchants: 8 registros -> lakehouse-local/raw/merchants/ingest_date=2026-09-29/part-0000.json
+
+━━━ bronze ━━━
+Unable to find image 'apache/spark:3.5.3-python3' locally
+3.5.3-python3: Pulling from apache/spark
+8cddf7b9c8a7: Pulling fs layer
+1b215f2e389f: Pulling fs layer
+0418d5d0d342: Pulling fs layer
+bf5a032d7513: Pulling fs layer
+2fa16691b852: Pulling fs layer
+895de5a7630c: Pulling fs layer
+6a151ce2f49c: Pulling fs layer
+ba61bfb12e50: Pulling fs layer
+4f4fb700ef54: Pulling fs layer
+9fd0968dbfc5: Pulling fs layer
+25bd901b7b2b: Pulling fs layer
+4f4fb700ef54: Already exists
+bf5a032d7513: Download complete
+0417dea36cb1: Download complete
+1b215f2e389f: Download complete
+6a151ce2f49c: Download complete
+0418d5d0d342: Download complete
+895de5a7630c: Download complete
+ba61bfb12e50: Download complete
+8cddf7b9c8a7: Download complete
+8cddf7b9c8a7: Pull complete
+ba61bfb12e50: Pull complete
+25bd901b7b2b: Download complete
+bf5a032d7513: Pull complete
+1b215f2e389f: Pull complete
+0418d5d0d342: Pull complete
+25bd901b7b2b: Pull complete
+895de5a7630c: Pull complete
+2fa16691b852: Download complete
+9fd0968dbfc5: Download complete
+4f4fb700ef54: Pull complete
+6a151ce2f49c: Pull complete
+9fd0968dbfc5: Pull complete
+2fa16691b852: Pull complete
+Digest: sha256:d0f5d63bfbbffdbec08debb4911554ba671a2fa7398374db8db314d80328f576
+Status: Downloaded newer image for apache/spark:3.5.3-python3
+downloading https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.2.1/delta-spark_2.12-3.2.1.jar ...
+downloading https://repo1.maven.org/maven2/io/delta/delta-storage/3.2.1/delta-storage-3.2.1.jar ...
+downloading https://repo1.maven.org/maven2/org/antlr/antlr4-runtime/4.9.3/antlr4-runtime-4.9.3.jar ...
+✓ transactions: tiene las columnas de auditoría
+✓ transactions: el lote 2026-09-29 tiene 30600 filas (sin duplicar)
+✓ transactions: source_file apunta al archivo del lote
+✓ fraud_events: tiene las columnas de auditoría
+✓ fraud_events: el lote 2026-09-29 tiene 129 filas (sin duplicar)
+✓ fraud_events: source_file apunta al archivo del lote
+✓ customers: tiene las columnas de auditoría
+✓ customers: el lote 2026-09-29 tiene 500 filas (sin duplicar)
+✓ customers: source_file apunta al archivo del lote
+✓ merchants: tiene las columnas de auditoría
+✓ merchants: el lote 2026-09-29 tiene 8 filas (sin duplicar)
+✓ merchants: source_file apunta al archivo del lote
+
+Bronze listo para el lote 2026-09-29
+
+━━━ silver ━━━
+✓ silver.transactions: tipos correctos
+✓ lote: válidas + cuarentena = transacciones distintas del lote (no se perdió nada)
+✓ cuarentena: cada fila tiene un dq_reason válido
+✓ silver: sin transaction_id duplicados
+✓ silver: se insertaron las 28249 transacciones nuevas
+✓ silver: el status de cada transacción del lote quedó actualizado
+✓ silver: todas las filas cumplen las reglas de calidad
+✓ silver.customers: sin nombres y con emails enmascarados
+
+Silver listo para el lote 2026-09-29
+
+━━━ gold ━━━
+✓ daily: una fila por día y comercio
+✓ daily: cuadra el número de transacciones con silver
+✓ daily: cuadra el monto aprobado
+✓ daily: cuadra el monto en contracargos
+✓ daily: particiones bien formadas
+✓ weekly: una fila por semana, patrón y segmento
+✓ weekly: cuadra el número de eventos
+✓ weekly: las semanas empiezan en lunes
+✓ hourly: 24 horas
+✓ hourly: cuadra con las aprobadas de silver
+
+Gold listo
+
+━━━ audit ━━━
++-------+-----------------------+---------+--------------------------------------------------------------------------------+
+|version|              timestamp|operation|                                                                operationMetrics|
++-------+-----------------------+---------+--------------------------------------------------------------------------------+
+|      1|2026-11-05 09:47:00.522|    MERGE|{numTargetRowsCopied -> 0, numTargetRowsDeleted -> 0, numTargetFilesAdded -> ...|
+|      0|2026-11-05 09:46:58.742|    WRITE|                        {numFiles -> 0, numOutputRows -> 0, numOutputBytes -> 0}|
++-------+-----------------------+---------+--------------------------------------------------------------------------------+
+
+Versión 1: 28249 insertadas, 0 actualizadas
++----------+----------+-------------+---------+
+|old_status|new_status|transacciones|monto_cop|
++----------+----------+-------------+---------+
++----------+----------+-------------+---------+
+
+✓ status_changes: columnas correctas
+✓ status_changes: coincide con las filas que actualizó el MERGE
+✓ status_changes: solo cambios reales
+✓ las versiones difieren exactamente en las filas insertadas por el MERGE
+
+Auditoría lista

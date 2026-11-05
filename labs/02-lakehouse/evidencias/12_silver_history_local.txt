@@ -1,0 +1,26 @@
+SILVER_TOTAL_VERSIONS 21
+VER 0 WRITE {'numOutputRows': '0'}
+VER 1 MERGE {'numTargetRowsInserted': '28249', 'numTargetRowsUpdated': '0', 'numTargetRowsCopied': '0', 'numTargetRowsDeleted': '0', 'numOutputRows': '28249', 'numTargetFilesAdded': '2'}
+VER 2 MERGE {'numTargetRowsInserted': '3802', 'numTargetRowsUpdated': '84', 'numTargetRowsCopied': '28165', 'numTargetRowsDeleted': '0', 'numOutputRows': '32051', 'numTargetFilesAdded': '3'}
+VER 3 MERGE {'numTargetRowsInserted': '3798', 'numTargetRowsUpdated': '80', 'numTargetRowsCopied': '31971', 'numTargetRowsDeleted': '0', 'numOutputRows': '35849', 'numTargetFilesAdded': '3'}
+VER 4 MERGE {'numTargetRowsInserted': '3813', 'numTargetRowsUpdated': '57', 'numTargetRowsCopied': '35792', 'numTargetRowsDeleted': '0', 'numOutputRows': '39662', 'numTargetFilesAdded': '3'}
+VER 5 MERGE {'numTargetRowsInserted': '306', 'numTargetRowsUpdated': '9', 'numTargetRowsCopied': '39653', 'numTargetRowsDeleted': '0', 'numOutputRows': '39968', 'numTargetFilesAdded': '3'}
+VER 6 MERGE {'numTargetRowsInserted': '38', 'numTargetRowsUpdated': '1', 'numTargetRowsCopied': '13646', 'numTargetRowsDeleted': '0', 'numOutputRows': '13685', 'numTargetFilesAdded': '2'}
+VER 7 MERGE {'numTargetRowsInserted': '188', 'numTargetRowsUpdated': '3', 'numTargetRowsCopied': '28285', 'numTargetRowsDeleted': '0', 'numOutputRows': '28476', 'numTargetFilesAdded': '3'}
+VER 8 MERGE {'numTargetRowsInserted': '188', 'numTargetRowsUpdated': '3', 'numTargetRowsCopied': '14826', 'numTargetRowsDeleted': '0', 'numOutputRows': '15017', 'numTargetFilesAdded': '2'}
+VER 9 MERGE {'numTargetRowsInserted': '207', 'numTargetRowsUpdated': '3', 'numTargetRowsCopied': '15014', 'numTargetRowsDeleted': '0', 'numOutputRows': '15224', 'numTargetFilesAdded': '2'}
+VER 10 MERGE {'numTargetRowsInserted': '1676', 'numTargetRowsUpdated': '45', 'numTargetRowsCopied': '28826', 'numTargetRowsDeleted': '0', 'numOutputRows': '30547', 'numTargetFilesAdded': '3'}
+VER 11 MERGE {'numTargetRowsInserted': '188', 'numTargetRowsUpdated': '5', 'numTargetRowsCopied': '28245', 'numTargetRowsDeleted': '0', 'numOutputRows': '28438', 'numTargetFilesAdded': '3'}
+VER 12 MERGE {'numTargetRowsInserted': '510', 'numTargetRowsUpdated': '9', 'numTargetRowsCopied': '28429', 'numTargetRowsDeleted': '0', 'numOutputRows': '28948', 'numTargetFilesAdded': '3'}
+VER 13 MERGE {'numTargetRowsInserted': '466', 'numTargetRowsUpdated': '8', 'numTargetRowsCopied': '28940', 'numTargetRowsDeleted': '0', 'numOutputRows': '29414', 'numTargetFilesAdded': '3'}
+VER 14 MERGE {'numTargetRowsInserted': '490', 'numTargetRowsUpdated': '12', 'numTargetRowsCopied': '29402', 'numTargetRowsDeleted': '0', 'numOutputRows': '29904', 'numTargetFilesAdded': '3'}
+VER 15 MERGE {'numTargetRowsInserted': '490', 'numTargetRowsUpdated': '11', 'numTargetRowsCopied': '29893', 'numTargetRowsDeleted': '0', 'numOutputRows': '30394', 'numTargetFilesAdded': '3'}
+VER 16 MERGE {'numTargetRowsInserted': '491', 'numTargetRowsUpdated': '12', 'numTargetRowsCopied': '30382', 'numTargetRowsDeleted': '0', 'numOutputRows': '30885', 'numTargetFilesAdded': '3'}
+VER 17 MERGE {'numTargetRowsInserted': '480', 'numTargetRowsUpdated': '9', 'numTargetRowsCopied': '30876', 'numTargetRowsDeleted': '0', 'numOutputRows': '31365', 'numTargetFilesAdded': '3'}
+VER 18 MERGE {'numTargetRowsInserted': '479', 'numTargetRowsUpdated': '10', 'numTargetRowsCopied': '31355', 'numTargetRowsDeleted': '0', 'numOutputRows': '31844', 'numTargetFilesAdded': '3'}
+VER 19 MERGE {'numTargetRowsInserted': '482', 'numTargetRowsUpdated': '13', 'numTargetRowsCopied': '31831', 'numTargetRowsDeleted': '0', 'numOutputRows': '32326', 'numTargetFilesAdded': '3'}
+VER 20 MERGE {'numTargetRowsInserted': '1828', 'numTargetRowsUpdated': '27', 'numTargetRowsCopied': '32299', 'numTargetRowsDeleted': '0', 'numOutputRows': '34154', 'numTargetFilesAdded': '3'}
+MERGE_COUNT 20
+MERGE_SUM_inserted 48169
+MERGE_SUM_updated 401
+MERGE_SUM_copied 537830

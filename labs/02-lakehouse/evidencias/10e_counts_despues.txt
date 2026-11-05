@@ -1,0 +1,4 @@
+COUNT bronze/transaction_events 20966
+COUNT silver/transactions 48169
+COUNT gold/merchant_minute_metrics 178
+COUNT gold/fraud_alerts 201
