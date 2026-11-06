@@ -2,43 +2,43 @@
 -- Consumo: consultas Athena sobre las tablas Delta del lakehouse
 --
 -- Ejecútalas en la consola de Athena con el workgroup paytrack-lakehouse-wg.
--- Reemplaza <BUCKET> por el nombre de tu bucket (salida del deploy).
+-- Reemplaza paytrack-lakehouse-sgutierr28-918897411141 por el nombre de tu bucket (salida del deploy).
 -- Anota los MB escaneados de cada consulta (pestaña "Query stats").
 -- ============================================================
 
 -- ── Dado: registrar las tablas Delta en el catálogo ─────────
 -- Athena lee el esquema y las particiones directamente del _delta_log.
 CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.silver_transactions
-LOCATION 's3://<BUCKET>/lakehouse/silver/transactions/'
+LOCATION 's3://paytrack-lakehouse-sgutierr28-918897411141/lakehouse/silver/transactions/'
 TBLPROPERTIES ('table_type' = 'DELTA');
 
 CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.gold_daily_merchant_summary
-LOCATION 's3://<BUCKET>/lakehouse/gold/daily_merchant_summary/'
+LOCATION 's3://paytrack-lakehouse-sgutierr28-918897411141/lakehouse/gold/daily_merchant_summary/'
 TBLPROPERTIES ('table_type' = 'DELTA');
 
 CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.gold_fraud_weekly_report
-LOCATION 's3://<BUCKET>/lakehouse/gold/fraud_weekly_report/'
+LOCATION 's3://paytrack-lakehouse-sgutierr28-918897411141/lakehouse/gold/fraud_weekly_report/'
 TBLPROPERTIES ('table_type' = 'DELTA');
 
 CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.gold_hourly_volume
-LOCATION 's3://<BUCKET>/lakehouse/gold/hourly_volume/'
+LOCATION 's3://paytrack-lakehouse-sgutierr28-918897411141/lakehouse/gold/hourly_volume/'
 TBLPROPERTIES ('table_type' = 'DELTA');
 
 CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.gold_status_changes
-LOCATION 's3://<BUCKET>/lakehouse/gold/status_changes/'
+LOCATION 's3://paytrack-lakehouse-sgutierr28-918897411141/lakehouse/gold/status_changes/'
 TBLPROPERTIES ('table_type' = 'DELTA');
 
 -- Tablas del streaming (parte B)
 CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.gold_merchant_minute_metrics
-LOCATION 's3://<BUCKET>/lakehouse/gold/merchant_minute_metrics/'
+LOCATION 's3://paytrack-lakehouse-sgutierr28-918897411141/lakehouse/gold/merchant_minute_metrics/'
 TBLPROPERTIES ('table_type' = 'DELTA');
 
 CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.gold_fraud_alerts
-LOCATION 's3://<BUCKET>/lakehouse/gold/fraud_alerts/'
+LOCATION 's3://paytrack-lakehouse-sgutierr28-918897411141/lakehouse/gold/fraud_alerts/'
 TBLPROPERTIES ('table_type' = 'DELTA');
 
 CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.bronze_transaction_events
-LOCATION 's3://<BUCKET>/lakehouse/bronze/transaction_events/'
+LOCATION 's3://paytrack-lakehouse-sgutierr28-918897411141/lakehouse/bronze/transaction_events/'
 TBLPROPERTIES ('table_type' = 'DELTA');
 
 -- ── TODO 1 ──────────────────────────────────────────────────
